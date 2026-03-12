@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Book Tetris</title>
+
+<style>
+body{
+    background:#111;
+    color:white;
+    text-align:center;
+    font-family:monospace;
+}
+
+canvas{
+    background:#000;
+    border:4px solid white;
+    image-rendering: pixelated;
+}
+
+h1{
+    color:#ff66ff;
+    text-shadow:0 0 12px #ff66ff;
+}
+
+#scoreboard{
+    font-size:20px;
+    margin:10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📚 Book Tetris</h1>
+
+<div id="scoreboard">
+Score: <span id="score">0</span> |
+High Score: <span id="highscore">0</span>
+</div>
+
+<canvas id="game" width="300" height="600"></canvas>
+
+<p>Move mouse • Left click rotate left • Right click rotate right</p>
+
+<script>
+
+const canvas = document.getElementById("game")
+const ctx = canvas.getContext("2d")
+
+const COLS = 10
+const ROWS = 20
+const SIZE = 30
+
+let board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0))
+
+let score = 0
+let highScore = localStorage.getItem("bookTetrisHighScore") || 0
+document.getElementById("highscore").innerText = highScore
+
+const colors = [
+"#ff66cc",
+"#66ccff",
+"#66ff99",
+"#ffcc66",
+"#cc66ff",
+"#ff6666",
+"#66ffff"
+]
+
+const pieces = [
+[[1,1,1,1]],
+[[1,1],[1,1]],
+[[0,1,0],[1,1,1]],
+[[1,1,0],[0,1,1]],
+[[0,1,1],[1,1,0]],
+[[1,0,0],[1,1,1]],
+[[0,0,1],[1,1,1]]
+]
+
+let piece = newPiece()
+
+function newPiece(){
+    return {
+        shape: pieces[Math.floor(Math.random()*pieces.length)],
+        x:3,
+        y:0,
+        color: colors[Math.floor(Math.random()*colors.length)]
+    }
+}
+
+function drawBook(x,y,color){
+
+    ctx.fillStyle=color
+    ctx.fillRect(x*SIZE,y*SIZE,SIZE,SIZE)
+
+    ctx.fillStyle="#ffffff"
+    ctx.fillRect(x*SIZE+4,y*SIZE+4,SIZE-8,SIZE-8)
+
+    ctx.fillStyle="#222"
+    ctx.fillRect(x*SIZE+6,y*SIZE+4,4,SIZE-8)
+}
+
+function draw(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+
+    for(let y=0;y<ROWS;y++){
+        for(let x=0;x<COLS;x++){
+            if(board[y][x]){
+                drawBook(x,y,board[y][x])
+            }
+        }
+    }
+
+    piece.shape.forEach((row,dy)=>{
+        row.forEach((val,dx)=>{
+            if(val){
+                drawBook(piece.x+dx,piece.y+dy,piece.color)
+            }
+        })
+    })
+}
+
+function collide(){
+
+    for(let y=0;y<piece.shape.length;y++){
+        for(let x=0;x<piece.shape[y].length;x++){
+
+            if(piece.shape[y][x]){
+
+                let newX = piece.x+x
+                let newY = piece.y+y
+
+                if(newX<0||newX>=COLS||newY>=ROWS) return true
+                if(newY>=0 && board[newY][newX]) return true
+            }
+        }
+    }
+
+    return false
+}
+
+function merge(){
+
+    piece.shape.forEach((row,y)=>{
+        row.forEach((val,x)=>{
+            if(val){
+                board[piece.y+y][piece.x+x]=piece.color
+            }
+        })
+    })
+}
+
+function rotateRight(){
+
+    let rotated = piece.shape[0].map((_,i)=>
+        piece.shape.map(row=>row[i]).reverse()
+    )
+
+    let old = piece.shape
+    piece.shape = rotated
+
+    if(collide()) piece.shape = old
+}
+
+function rotateLeft(){
+
+    let rotated = piece.shape[0].map((_,i)=>
+        piece.shape.map(row=>row[row.length-1-i])
+    )
+
+    let old = piece.shape
+    piece.shape = rotated
+
+    if(collide()) piece.shape = old
+}
+
+function clearLines(){
+
+    let lines = 0
+
+    for(let y=ROWS-1;y>=0;y--){
+
+        if(board[y].every(v=>v)){
+
+            board.splice(y,1)
+            board.unshift(Array(COLS).fill(0))
+
+            lines++
+            y++
+        }
+    }
+
+    if(lines>0){
+
+        score += lines * 100
+        document.getElementById("score").innerText = score
+
+        if(score > highScore){
+            highScore = score
+            localStorage.setItem("bookTetrisHighScore", highScore)
+            document.getElementById("highscore").innerText = highScore
+        }
+    }
+}
+
+function drop(){
+
+    piece.y++
+
+    if(collide()){
+
+        piece.y--
+
+        merge()
+
+        clearLines()
+
+        piece = newPiece()
+
+        if(collide()){
+            alert("Game Over!")
+
+            board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0))
+            score = 0
+            document.getElementById("score").innerText = score
+        }
+    }
+}
+
+canvas.addEventListener("mousemove", e=>{
+
+    let rect = canvas.getBoundingClientRect()
+    let mouseX = e.clientX - rect.left
+    let col = Math.floor(mouseX / SIZE)
+
+    piece.x = col
+
+    if(collide()){
+        piece.x = Math.max(0,Math.min(COLS-1,col))
+    }
+
+})
+
+canvas.addEventListener("mousedown", e=>{
+
+    if(e.button === 0){
+        rotateLeft()
+    }
+
+    if(e.button === 2){
+        rotateRight()
+    }
+
+})
+
+canvas.addEventListener("contextmenu", e=> e.preventDefault())
+
+document.addEventListener("keydown", e=>{
+    if(e.key==="ArrowDown") drop()
+})
+
+setInterval(()=>{
+    drop()
+    draw()
+},500)
+
+draw()
+
+</script>
+
+</body>
+</html>
