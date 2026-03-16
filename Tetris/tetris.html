@@ -167,12 +167,14 @@ function rotateRight(){
 
 function rotateLeft(){
 
+    console.log(piece.shape)
     let rotated = piece.shape.map((_,i)=>
         piece.shape.map(row=>row[row.length-1-i])
     )
 
     let old = piece.shape
     piece.shape = rotated
+    console.log(piece.shape)
 
     if(collide()) piece.shape = old
 }
