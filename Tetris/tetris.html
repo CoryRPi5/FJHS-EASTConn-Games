@@ -41,7 +41,7 @@ High Score: <span id="highscore">0</span>
 
 <canvas id="game" width="300" height="600"></canvas>
 
-<p>Move mouse • Left click rotate left • Right click rotate right</p>
+<p>← → Move • Z Rotate left • X Rotate right • ↓ Drop</p>
 
 <script>
 
@@ -107,8 +107,8 @@ function draw(){
 
     for(let y=0;y<ROWS;y++){
         for(let x=0;x<COLS;x++){
-            if(board[y][x]){
-                drawBook(x,y,board[y][x])
+            if(board[y] [x]){
+                drawBook(x,y,board[y] [x])
             }
         }
     }
@@ -127,13 +127,13 @@ function collide(){
     for(let y=0;y<piece.shape.length;y++){
         for(let x=0;x<piece.shape[y].length;x++){
 
-            if(piece.shape[y][x]){
+            if(piece.shape[y] [x]){
 
                 let newX = piece.x+x
                 let newY = piece.y+y
 
                 if(newX<0||newX>=COLS||newY>=ROWS) return true
-                if(newY>=0 && board[newY][newX]) return true
+                if(newY>=0 && board[newY] [newX]) return true
             }
         }
     }
@@ -146,7 +146,7 @@ function merge(){
     piece.shape.forEach((row,y)=>{
         row.forEach((val,x)=>{
             if(val){
-                board[piece.y+y][piece.x+x]=piece.color
+                board[piece.y+y] [piece.x+x]=piece.color
             }
         })
     })
@@ -154,7 +154,7 @@ function merge(){
 
 function rotateRight(){
 
-    let rotated = piece.shape[0].map((_,i)=>
+    let rotated = piece.shape.map((_,i)=>
         piece.shape.map(row=>row[i]).reverse()
     )
 
@@ -166,7 +166,7 @@ function rotateRight(){
 
 function rotateLeft(){
 
-    let rotated = piece.shape[0].map((_,i)=>
+    let rotated = piece.shape.map((_,i)=>
         piece.shape.map(row=>row[row.length-1-i])
     )
 
@@ -229,36 +229,22 @@ function drop(){
     }
 }
 
-canvas.addEventListener("mousemove", e=>{
+function moveLeft(){
+    piece.x--
+    if(collide()) piece.x++
+}
 
-    let rect = canvas.getBoundingClientRect()
-    let mouseX = e.clientX - rect.left
-    let col = Math.floor(mouseX / SIZE)
-
-    piece.x = col
-
-    if(collide()){
-        piece.x = Math.max(0,Math.min(COLS-1,col))
-    }
-
-})
-
-canvas.addEventListener("mousedown", e=>{
-
-    if(e.button === 0){
-        rotateLeft()
-    }
-
-    if(e.button === 2){
-        rotateRight()
-    }
-
-})
-
-canvas.addEventListener("contextmenu", e=> e.preventDefault())
+function moveRight(){
+    piece.x++
+    if(collide()) piece.x--
+}
 
 document.addEventListener("keydown", e=>{
-    if(e.key==="ArrowDown") drop()
+    if(e.key==="ArrowLeft")  { e.preventDefault(); moveLeft();   draw() }
+    if(e.key==="ArrowRight") { e.preventDefault(); moveRight();  draw() }
+    if(e.key==="ArrowDown")  { e.preventDefault(); drop();       draw() }
+    if(e.key==="z"||e.key==="Z") { rotateLeft();  draw() }
+    if(e.key==="x"||e.key==="X") { rotateRight(); draw() }
 })
 
 setInterval(()=>{
