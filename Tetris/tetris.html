@@ -240,11 +240,11 @@ function moveRight(){
 }
 
 document.addEventListener("keydown", e=>{
-    if(e.key==="ArrowLeft")  { e.preventDefault(); moveLeft();   draw() }
-    if(e.key==="ArrowRight") { e.preventDefault(); moveRight();  draw() }
-    if(e.key==="ArrowDown")  { e.preventDefault(); drop();       draw() }
-    if(e.key==="z"||e.key==="Z") { rotateLeft();  draw() }
-    if(e.key==="x"||e.key==="X") { rotateRight(); draw() }
+    if(e.key==="ArrowLeft")  { e.preventDefault(); moveLeft();   }
+    if(e.key==="ArrowRight") { e.preventDefault(); moveRight();  }
+    if(e.key==="ArrowDown")  { e.preventDefault(); drop();       }
+    if(e.key==="z"||e.key==="Z") { rotateLeft();  }
+    if(e.key==="x"||e.key==="X") { rotateRight(); }
 })
 
 setInterval(()=>{
