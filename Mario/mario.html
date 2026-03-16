@@ -105,7 +105,7 @@ function update() {
     else if (keys["ArrowLeft"]) player.velX = -player.speed;
     else player.velX = 0;
 
-    if (keys["Space"] && player.grounded) {
+    if (keys["ArrowUp"] && player.grounded) {
         player.velY = -player.jumpPower;
         player.grounded = false;
     }
