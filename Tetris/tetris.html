@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -167,97 +166,7 @@ function rotateRight(){
 
 function rotateLeft(){
 
-    console.log(piece.shape)
-    let rotated = piece.shape.map((_,i)=>
-        piece.shape.map(row=>row[row.length-1-i])
-    )
-
-    let old = piece.shape
-    piece.shape = rotated
-    console.log(piece.shape)
-
-    if(collide()) piece.shape = old
-}
-
-function clearLines(){
-
-    let lines = 0
-
-    for(let y=ROWS-1;y>=0;y--){
-
-        if(board[y].every(v=>v)){
-
-            board.splice(y,1)
-            board.unshift(Array(COLS).fill(0))
-
-            lines++
-            y++
-        }
-    }
-
-    if(lines>0){
-
-        score += lines * 100
-        document.getElementById("score").innerText = score
-
-        if(score > highScore){
-            highScore = score
-            localStorage.setItem("bookTetrisHighScore", highScore)
-            document.getElementById("highscore").innerText = highScore
-        }
-    }
-}
-
-function drop(){
-
-    piece.y++
-
-    if(collide()){
-
-        piece.y--
-
-        merge()
-
-        clearLines()
-
-        piece = newPiece()
-
-        if(collide()){
-            alert("Game Over!")
-
-            board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0))
-            score = 0
-            document.getElementById("score").innerText = score
-        }
-    }
-}
-
-function moveLeft(){
-    piece.x--
-    if(collide()) piece.x++
-}
-
-function moveRight(){
-    piece.x++
-    if(collide()) piece.x--
-}
-
-document.addEventListener("keydown", e=>{
-    if(e.key==="ArrowLeft")  { e.preventDefault(); moveLeft();   }
-    if(e.key==="ArrowRight") { e.preventDefault(); moveRight();  }
-    if(e.key==="ArrowDown")  { e.preventDefault(); drop();       }
-    if(e.key==="z"||e.key==="Z") { rotateLeft();  }
-    if(e.key==="x"||e.key==="X") { rotateRight(); }
-})
-
-setInterval(()=>{
-    drop()
-    draw()
-},500)
-
-draw()
-
-</script>
-
-</body>
-</html>
+    let n = piece.shape.length
+    let m = piece.shape.length
+    
+    let rotated = Array.from({
