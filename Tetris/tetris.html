@@ -152,21 +152,15 @@ function merge(){
     })
 }
 
-function rotateRight(){
-
-    let rotated = piece.shape.map((_,i)=>
-        piece.shape.map(row=>row[i]).reverse()
-    )
-
-    let old = piece.shape
-    piece.shape = rotated
-
-    if(collide()) piece.shape = old
+function logPiece() {
+    console.log("Piece at:", piece.x, piece.y);
+    console.log("Shape:");
+    piece.shape.forEach(row => console.log(row));
 }
 
-function rotateLeft(){
+function rotateLeft() {
+    let n = piece.shape.length;
+    let m = piece.shape.length;
 
-    let n = piece.shape.length
-    let m = piece.shape.length
-    
-    let rotated = Array.from({
+    let rotated = Array.from({ length: m }, (_, i) =>
+        Array.from({ length: n },
