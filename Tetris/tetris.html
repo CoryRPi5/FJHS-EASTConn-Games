@@ -1,265 +1,201 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<title>Book Exchange Tetris</title>
+<title>Simple Tetris</title>
 <style>
-body{
-  margin:0;
-  height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-family:Arial, Helvetica, sans-serif;
-  color:white;
-  background: radial-gradient(circle at center,#5a4634 0%,#3e2f22 50%,#1f1812 100%);
+body {
+  margin: 0;
+  background: #111;
+  color: white;
+  font-family: monospace;
+  text-align: center;
 }
 
-#game{
-  display:flex;
-  gap:20px;
-  background:rgba(0,0,0,0.35);
-  padding:20px;
-  border-radius:10px;
+canvas {
+  background: #000;
+  display: block;
+  margin: 20px auto;
+  border: 3px solid #444;
 }
 
-canvas{
-  border:6px solid #3a2a14;
-  background:#6b4f2a;
+#ui {
+  font-size: 18px;
 }
-
-h1{margin-top:0;font-size:20px}
 </style>
 </head>
 <body>
 
-<div id="game">
-<canvas id="board" width="200" height="400"></canvas>
-<div>
-<h1>Book Exchange Tetris</h1>
-<p>Stack the books neatly.</p>
-<p>⬅ ➡ move</p>
-<p>⬆ rotate</p>
-<p>⬇ drop</p>
-<p><b>Score:</b> <span id="score">0</span></p>
-<p><b>High Score:</b> <span id="highscore">0</span></p>
+<h1>Tetris</h1>
+<div id="ui">
+  Score: <span id="score">0</span> |
+  High Score: <span id="highscore">0</span>
 </div>
-</div>
+
+<canvas id="game" width="240" height="400"></canvas>
 
 <script>
-const canvas=document.getElementById("board");
-const ctx=canvas.getContext("2d");
-const scoreEl=document.getElementById("score");
-const highScoreEl=document.getElementById("highscore");
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-const COLS=10;
-const ROWS=20;
-const SIZE=20;
+const COLS = 10;
+const ROWS = 20;
+const BLOCK = 20;
 
-let score=0;
+let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
 
-let highScore=localStorage.getItem("bookExchangeTetrisHighScore")||0;
-highScoreEl.textContent=highScore;
+let score = 0;
+let highscore = localStorage.getItem("tetrisHigh") || 0;
 
-const board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+document.getElementById("highscore").textContent = highscore;
 
-const colors=[
- null,
- "#e63946",
- "#457b9d",
- "#2a9d8f",
- "#f4a261",
- "#e9c46a",
- "#8d5a97",
- "#264653"
+// Tetromino shapes
+const pieces = [
+  [[1,1,1,1]], // I
+  [[1,1],[1,1]], // O
+  [[0,1,0],[1,1,1]], // T
+  [[1,0,0],[1,1,1]], // J
+  [[0,0,1],[1,1,1]], // L
+  [[1,1,0],[0,1,1]], // S
+  [[0,1,1],[1,1,0]]  // Z
 ];
 
-const pieces=[
- [],
- [[1,1,1,1]],
- [[2,2],[2,2]],
- [[0,3,0],[3,3,3]],
- [[4,0,0],[4,4,4]],
- [[0,0,5],[5,5,5]],
- [[0,6,6],[6,6,0]],
- [[7,7,0],[0,7,7]]
-];
-
-const bgBooks=[];
-for(let i=0;i<canvas.width;i+=16){
-  bgBooks.push({x:i,color:`hsl(${Math.random()*360},40%,45%)`});
+function randomPiece() {
+  const shape = pieces[Math.floor(Math.random() * pieces.length)];
+  return {
+    shape,
+    x: Math.floor(COLS / 2) - Math.ceil(shape[0].length / 2),
+    y: 0
+  };
 }
 
-function drawShelfBackground(){
-  ctx.fillStyle="#6b4f2a";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+let current = randomPiece();
 
-  ctx.fillStyle="#4e371c";
-  for(let y=0;y<ROWS;y+=4){
-    ctx.fillRect(0,y*SIZE+SIZE*3.7,canvas.width,6);
-  }
-
-  bgBooks.forEach(b=>{
-    ctx.fillStyle=b.color;
-    ctx.fillRect(b.x,0,10,canvas.height);
-  });
+function drawBlock(x, y) {
+  ctx.fillStyle = "#0ff";
+  ctx.fillRect(x * BLOCK, y * BLOCK, BLOCK - 1, BLOCK - 1);
 }
 
-function drawCell(x,y,color){
-  ctx.fillStyle=color;
-  ctx.fillRect(x*SIZE,y*SIZE,SIZE,SIZE);
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle="rgba(255,255,255,0.25)";
-  ctx.fillRect(x*SIZE,y*SIZE,4,SIZE);
-
-  ctx.fillStyle="rgba(0,0,0,0.25)";
-  ctx.fillRect(x*SIZE,y*SIZE+SIZE-4,SIZE,4);
-}
-
-function draw(){
-  drawShelfBackground();
-
-  board.forEach((row,y)=>{
-    row.forEach((v,x)=>{
-      if(v) drawCell(x,y,colors[v]);
+  // Draw board
+  board.forEach((row, y) => {
+    row.forEach((value, x) => {
+      if (value) drawBlock(x, y);
     });
   });
 
-  player.matrix.forEach((row,y)=>{
-    row.forEach((v,x)=>{
-      if(v) drawCell(player.x+x,player.y+y,colors[v]);
+  // Draw current piece
+  current.shape.forEach((row, dy) => {
+    row.forEach((value, dx) => {
+      if (value) drawBlock(current.x + dx, current.y + dy);
     });
   });
 }
 
-function collide(board,p){
-  for(let y=0;y<p.matrix.length;y++){
-    for(let x=0;x<p.matrix[y].length;x++){
-      if(p.matrix[y][x]){
-        let nx=x+p.x;
-        let ny=y+p.y;
+function collide() {
+  return current.shape.some((row, dy) => {
+    return row.some((value, dx) => {
+      if (!value) return false;
+      let x = current.x + dx;
+      let y = current.y + dy;
+      return (
+        x < 0 ||
+        x >= COLS ||
+        y >= ROWS ||
+        (y >= 0 && board[y][x])
+      );
+    });
+  });
+}
 
-        if(nx<0||nx>=COLS||ny>=ROWS) return true;
-        if(ny>=0 && board[ny][nx]) return true;
+function merge() {
+  current.shape.forEach((row, dy) => {
+    row.forEach((value, dx) => {
+      if (value) {
+        board[current.y + dy][current.x + dx] = 1;
       }
-    }
-  }
-  return false;
-}
-
-function merge(board,p){
-  p.matrix.forEach((row,y)=>{
-    row.forEach((v,x)=>{
-      if(v) board[y+p.y][x+p.x]=v;
     });
   });
 }
 
-function rotate(m){
-  return m[0].map((_,i)=>m.map(r=>r[i]).reverse());
-}
-
-function updateHighScore(){
-  if(score>highScore){
-    highScore=score;
-    localStorage.setItem("bookExchangeTetrisHighScore",highScore);
-    highScoreEl.textContent=highScore;
-  }
-}
-
-function playerReset(){
-  const id=Math.floor(Math.random()*(pieces.length-1))+1;
-  player.matrix=pieces[id];
-  player.y=0;
-  player.x=(COLS/2|0)-(player.matrix[0].length/2|0);
-
-  if(collide(board,player)){
-    updateHighScore();
-    board.forEach(r=>r.fill(0));
-    score=0;
-    scoreEl.textContent=score;
-  }
-}
-
-function sweep(){
-  outer:for(let y=board.length-1;y>=0;y--){
-    for(let x=0;x<COLS;x++){
-      if(board[y][x]==0) continue outer;
+function clearLines() {
+  let lines = 0;
+  board = board.filter(row => {
+    if (row.every(cell => cell)) {
+      lines++;
+      return false;
     }
+    return true;
+  });
 
-    const row=board.splice(y,1)[0].fill(0);
-    board.unshift(row);
-    y++;
-
-    score+=10;
-    scoreEl.textContent=score;
-  }
-}
-
-function playerDrop(){
-  player.y++;
-
-  if(collide(board,player)){
-    player.y--;
-    merge(board,player);
-    sweep();
-    playerReset();
+  while (board.length < ROWS) {
+    board.unshift(Array(COLS).fill(0));
   }
 
-  dropCounter=0;
-}
+  if (lines > 0) {
+    score += lines * 100;
+    document.getElementById("score").textContent = score;
 
-function playerMove(dir){
-  player.x+=dir;
-  if(collide(board,player)) player.x-=dir;
-}
-
-function playerRotate(){
-  const pos=player.x;
-  let offset=1;
-
-  player.matrix=rotate(player.matrix);
-
-  while(collide(board,player)){
-    player.x+=offset;
-    offset=-(offset+(offset>0?1:-1));
-
-    if(offset>player.matrix[0].length){
-      player.matrix=rotate(player.matrix);
-      player.matrix=rotate(player.matrix);
-      player.matrix=rotate(player.matrix);
-      player.x=pos;
-      return;
+    if (score > highscore) {
+      highscore = score;
+      localStorage.setItem("tetrisHigh", highscore);
+      document.getElementById("highscore").textContent = highscore;
     }
   }
 }
 
-let dropCounter=0;
-let dropInterval=700;
-let lastTime=0;
+function resetGame() {
+  board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+  score = 0;
+  document.getElementById("score").textContent = score;
+}
 
-function update(time=0){
-  const delta=time-lastTime;
-  lastTime=time;
+function drop() {
+  current.y++;
+  if (collide()) {
+    current.y--;
+    merge();
+    clearLines();
+    current = randomPiece();
 
-  dropCounter+=delta;
+    if (collide()) {
+      alert("Game Over!");
+      resetGame();
+    }
+  }
+}
 
-  if(dropCounter>dropInterval) playerDrop();
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") {
+    current.x--;
+    if (collide()) current.x++;
+  } else if (e.key === "ArrowRight") {
+    current.x++;
+    if (collide()) current.x--;
+  } else if (e.key === "ArrowDown") {
+    drop();
+  } else if (e.key === "ArrowUp") {
+    // rotate
+    const rotated = current.shape[0].map((_, i) =>
+      current.shape.map(row => row[i]).reverse()
+    );
+    const old = current.shape;
+    current.shape = rotated;
+    if (collide()) current.shape = old;
+  }
+});
 
+let lastTime = 0;
+function update(time = 0) {
+  if (time - lastTime > 500) {
+    drop();
+    lastTime = time;
+  }
   draw();
   requestAnimationFrame(update);
 }
 
-const player={x:0,y:0,matrix:null};
-
-window.addEventListener("keydown",e=>{
-  if(e.key==="ArrowLeft") playerMove(-1);
-  if(e.key==="ArrowRight") playerMove(1);
-  if(e.key==="ArrowDown") playerDrop();
-  if(e.key==="ArrowUp") playerRotate();
-});
-
-playerReset();
 update();
 </script>
 
