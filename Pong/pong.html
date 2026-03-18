@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pong with High Score</title>
+<style>
+body{
+    margin:0;
+    background:black;
+    color:white;
+    font-family:monospace;
+    text-align:center;
+}
+canvas{
+    display:block;
+    margin:auto;
+    background:#111;
+    border:3px solid white;
+}
+</style>
+</head>
+<body>
+
+<h2>PONG - Arrow Keys to Move</h2>
+<p id="score">Score: 0</p>
+<p id="highscore">High Score: 0</p>
+
+<canvas id="game" width="800" height="500"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// Paddle
+const paddle = {
+    x: 20,
+    y: 200,
+    width: 15,
+    height: 100,
+    speed: 6,
+    dy: 0
+};
+
+// Ball
+const ball = {
+    x: 400,
+    y: 250,
+    size: 10,
+    speed: 5,
+    dx: 5,
+    dy: 3
+};
+
+// AI paddle
+const ai = {
+    x: 765,
+    y: 200,
+    width: 15,
+    height: 100,
+    speed: 4
+};
+
+let score = 0;
+let highScore = localStorage.getItem("pongHighScore") || 0;
+
+document.getElementById("highscore").innerText = "High Score: " + highScore;
+
+// Controls
+document.addEventListener("keydown", (e)=>{
+    if(e.key === "ArrowUp") paddle.dy = -paddle.speed;
+    if(e.key === "ArrowDown") paddle.dy = paddle.speed;
+});
+
+document.addEventListener("keyup", (e)=>{
+    if(e.key === "ArrowUp" || e.key === "ArrowDown") paddle.dy = 0;
+});
+
+// Draw functions
+function drawRect(x,y,w,h,color="white"){
+    ctx.fillStyle = color;
+    ctx.fillRect(x,y,w,h);
+}
+
+function drawBall(){
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI*2);
+    ctx.fill();
+}
+
+// Reset game
+function resetGame(){
+    ball.x = 400;
+    ball.y = 250;
+    ball.dx = 5 * (Math.random() > 0.5 ? 1 : -1);
+    ball.dy = (Math.random() * 4) - 2;
+    score = 0;
+}
+
+// Update
+function update(){
+    // Move paddle
+    paddle.y += paddle.dy;
+
+    // Clamp paddle
+    if(paddle.y < 0) paddle.y = 0;
+    if(paddle.y + paddle.height > canvas.height)
+        paddle.y = canvas.height - paddle.height;
+
+    // Move ball
+    ball.x += ball.dx;
+    ball.y += ball.dy;
+
+    // Wall bounce
+    if(ball.y < 0 || ball.y > canvas.height){
+        ball.dy *= -1;
+    }
+
+    // Paddle collision
+    if(
+        ball.x - ball.size < paddle.x + paddle.width &&
+        ball.y > paddle.y &&
+        ball.y < paddle.y + paddle.height
+    ){
+        ball.dx *= -1;
+        score++;
+    }
+
+    // AI movement
+    if(ball.y < ai.y + ai.height/2) ai.y -= ai.speed;
+    else ai.y += ai.speed;
+
+    // Clamp AI
+    if(ai.y < 0) ai.y = 0;
+    if(ai.y + ai.height > canvas.height)
+        ai.y = canvas.height - ai.height;
+
+    // AI collision
+    if(
+        ball.x + ball.size > ai.x &&
+        ball.y > ai.y &&
+        ball.y < ai.y + ai.height
+    ){
+        ball.dx *= -1;
+    }
+
+    // Miss = reset
+    if(ball.x < 0){
+        if(score > highScore){
+            highScore = score;
+            localStorage.setItem("pongHighScore", highScore);
+        }
+        document.getElementById("highscore").innerText = "High Score: " + highScore;
+        resetGame();
+    }
+
+    document.getElementById("score").innerText = "Score: " + score;
+}
+
+// Draw
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    drawRect(paddle.x, paddle.y, paddle.width, paddle.height);
+    drawRect(ai.x, ai.y, ai.width, ai.height);
+    drawBall();
+}
+
+// Game loop
+function gameLoop(){
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+
+</body>
+</html>
