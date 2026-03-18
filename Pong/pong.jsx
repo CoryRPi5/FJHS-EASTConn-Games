@@ -1,6 +1,6 @@
-  jsx 
+  javascript 
 
-import React, { useRef, useEffect, useState, useCallback } from "react";
+ import React, { useRef, useEffect, useState, useCallback } from "react";
 
 const CANVAS_W = 900;
 const CANVAS_H = 450;
@@ -9,384 +9,384 @@ const BRICK_W = 40;
 const BRICK_H = 20;
 
 function createAudioContext() {
-  return new (window.AudioContext || window.webkitAudioContext)();
+return new (window.AudioContext || window.webkitAudioContext)();
 }
 
 function beep(audioCtx, freq) {
-  if (!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.frequency.value = freq;
-  osc.type = "square";
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-  osc.stop(audioCtx.currentTime + 0.15);
+if (!audioCtx) return;
+const osc = audioCtx.createOscillator();
+const gain = audioCtx.createGain();
+osc.frequency.value = freq;
+osc.type = "square";
+osc.connect(gain);
+gain.connect(audioCtx.destination);
+osc.start();
+gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+osc.stop(audioCtx.currentTime + 0.15);
 }
 
 function drawBrickBackground(ctx) {
-  for (let y = 0; y < CANVAS_H; y += BRICK_H) {
-    const offset = ((y / BRICK_H) % 2) * (BRICK_W / 2);
-    for (let x = -BRICK_W; x < CANVAS_W; x += BRICK_W) {
-      ctx.fillStyle = "#b22222";
-      ctx.fillRect(x + offset, y, BRICK_W, BRICK_H);
-      ctx.strokeStyle = "#5a1a1a";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x + offset, y, BRICK_W, BRICK_H);
-    }
+for (let y = 0; y < CANVAS_H; y += BRICK_H) {
+  const offset = ((y / BRICK_H) % 2) * (BRICK_W / 2);
+  for (let x = -BRICK_W; x < CANVAS_W; x += BRICK_W) {
+    ctx.fillStyle = "#b22222";
+    ctx.fillRect(x + offset, y, BRICK_W, BRICK_H);
+    ctx.strokeStyle = "#5a1a1a";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + offset, y, BRICK_W, BRICK_H);
   }
+}
 }
 
 export default function PongGame() {
-  const canvasRef = useRef(null);
-  const audioCtxRef = useRef(null);
-  const stateRef = useRef({
-    mouseY: 200,
-    player: { x: 20, y: 180, w: 12, h: 133 },
-    cpu: { x: 865, y: 180, w: 12, h: 133 },
-    ball: { x: 450, y: 225, vx: 9, vy: 7, size: 12 },
-    score: 0,
-    highScore: parseInt((typeof localStorage !== "undefined" && localStorage.getItem("pongHighScore")) || "0", 10),
-    gameOver: false,
-    started: false,
-    trail: [],
-  });
-  const [displayScore, setDisplayScore] = useState(0);
-  const [displayHigh, setDisplayHigh] = useState(stateRef.current.highScore);
-  const [isGameOver, setIsGameOver] = useState(false);
-  const [started, setStarted] = useState(false);
-  const animRef = useRef(null);
+const canvasRef = useRef(null);
+const audioCtxRef = useRef(null);
+const stateRef = useRef({
+  mouseY: 200,
+  player: { x: 20, y: 180, w: 12, h: 133 },
+  cpu: { x: 865, y: 180, w: 12, h: 133 },
+  ball: { x: 450, y: 225, vx: 9, vy: 7, size: 12 },
+  score: 0,
+  highScore: parseInt((typeof localStorage !== "undefined" && localStorage.getItem("pongHighScore")) || "0", 10),
+  gameOver: false,
+  started: false,
+  trail: [],
+});
+const [displayScore, setDisplayScore] = useState(0);
+const [displayHigh, setDisplayHigh] = useState(stateRef.current.highScore);
+const [isGameOver, setIsGameOver] = useState(false);
+const [started, setStarted] = useState(false);
+const animRef = useRef(null);
 
-  const resetGame = useCallback(() => {
+const resetGame = useCallback(() => {
+  const s = stateRef.current;
+  s.ball = { x: 450, y: 225, vx: 9, vy: 7, size: 12 };
+  s.score = 0;
+  s.gameOver = false;
+  s.started = true;
+  s.trail = [];
+  setDisplayScore(0);
+  setIsGameOver(false);
+  setStarted(true);
+}, []);
+
+const startGame = useCallback(() => {
+  if (!audioCtxRef.current) {
+    audioCtxRef.current = createAudioContext();
+  }
+  resetGame();
+}, [resetGame]);
+
+useEffect(() => {
+  const canvas = canvasRef.current;
+  const ctx = canvas.getContext("2d");
+
+  const handleMouseMove = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleY = CANVAS_H / rect.height;
+    stateRef.current.mouseY = (e.clientY - rect.top) * scaleY;
+  };
+
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const scaleY = CANVAS_H / rect.height;
+    stateRef.current.mouseY = (e.touches[0].clientY - rect.top) * scaleY;
+  };
+
+  canvas.addEventListener("mousemove", handleMouseMove);
+  canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+
+  function loop() {
     const s = stateRef.current;
-    s.ball = { x: 450, y: 225, vx: 9, vy: 7, size: 12 };
-    s.score = 0;
-    s.gameOver = false;
-    s.started = true;
-    s.trail = [];
-    setDisplayScore(0);
-    setIsGameOver(false);
-    setStarted(true);
-  }, []);
+    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    drawBrickBackground(ctx);
 
-  const startGame = useCallback(() => {
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = createAudioContext();
+    // Player paddle follows mouse
+    s.player.y = Math.max(0, Math.min(CANVAS_H - s.player.h, s.mouseY - s.player.h / 2));
+
+    // CPU AI
+    let target = s.ball.y - s.cpu.h / 2;
+    if (s.score > 10 && s.ball.vx > 0 && Math.random() < 0.08) {
+      target += Math.random() * 200 - 100;
     }
-    resetGame();
-  }, [resetGame]);
+    s.cpu.y += (target - s.cpu.y) * 0.35;
+    s.cpu.y = Math.max(0, Math.min(CANVAS_H - s.cpu.h, s.cpu.y));
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    if (!s.gameOver && s.started) {
+      // Add current position to trail
+      s.trail.push({ x: s.ball.x, y: s.ball.y, alpha: 1 });
+      if (s.trail.length > 12) s.trail.shift();
 
-    const handleMouseMove = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const scaleY = CANVAS_H / rect.height;
-      stateRef.current.mouseY = (e.clientY - rect.top) * scaleY;
-    };
+      s.ball.x += s.ball.vx;
+      s.ball.y += s.ball.vy;
 
-    const handleTouchMove = (e) => {
-      e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const scaleY = CANVAS_H / rect.height;
-      stateRef.current.mouseY = (e.touches[0].clientY - rect.top) * scaleY;
-    };
-
-    canvas.addEventListener("mousemove", handleMouseMove);
-    canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
-
-    function loop() {
-      const s = stateRef.current;
-      ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-      drawBrickBackground(ctx);
-
-      // Player paddle follows mouse
-      s.player.y = Math.max(0, Math.min(CANVAS_H - s.player.h, s.mouseY - s.player.h / 2));
-
-      // CPU AI
-      let target = s.ball.y - s.cpu.h / 2;
-      if (s.score > 10 && s.ball.vx > 0 && Math.random() < 0.08) {
-        target += Math.random() * 200 - 100;
-      }
-      s.cpu.y += (target - s.cpu.y) * 0.35;
-      s.cpu.y = Math.max(0, Math.min(CANVAS_H - s.cpu.h, s.cpu.y));
-
-      if (!s.gameOver && s.started) {
-        // Add current position to trail
-        s.trail.push({ x: s.ball.x, y: s.ball.y, alpha: 1 });
-        if (s.trail.length > 12) s.trail.shift();
-
-        s.ball.x += s.ball.vx;
-        s.ball.y += s.ball.vy;
-
-        // Wall bounce
-        if (s.ball.y < 0 || s.ball.y > CANVAS_H - s.ball.size) {
-          s.ball.vy *= -1;
-          beep(audioCtxRef.current, 500);
-        }
-
-        // Player hit
-        if (
-          s.ball.x < s.player.x + s.player.w &&
-          s.ball.y + s.ball.size > s.player.y &&
-          s.ball.y < s.player.y + s.player.h
-        ) {
-          s.ball.vx = Math.abs(s.ball.vx);
-          s.score++;
-          setDisplayScore(s.score);
-          beep(audioCtxRef.current, 700);
-        }
-
-        // CPU hit
-        if (
-          s.ball.x + s.ball.size > s.cpu.x &&
-          s.ball.y + s.ball.size > s.cpu.y &&
-          s.ball.y < s.cpu.y + s.cpu.h
-        ) {
-          s.ball.vx = -Math.abs(s.ball.vx);
-          s.score++;
-          setDisplayScore(s.score);
-          beep(audioCtxRef.current, 700);
-        }
-
-        // Miss
-        if (s.ball.x < -s.ball.size || s.ball.x > CANVAS_W + s.ball.size) {
-          beep(audioCtxRef.current, 200);
-          s.gameOver = true;
-          if (s.score > s.highScore) {
-            s.highScore = s.score;
-            if (typeof localStorage !== "undefined") localStorage.setItem("pongHighScore", s.highScore);
-          }
-          setIsGameOver(true);
-        }
+      // Wall bounce
+      if (s.ball.y < 0 || s.ball.y > CANVAS_H - s.ball.size) {
+        s.ball.vy *= -1;
+        beep(audioCtxRef.current, 500);
       }
 
-      // Draw trail
-      s.trail.forEach((particle, i) => {
-        const alpha = (i / s.trail.length) * 0.6;
-        const size = s.ball.size * (0.4 + (i / s.trail.length) * 0.6);
-        ctx.shadowColor = "#ffffff";
-        ctx.shadowBlur = 8;
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-        ctx.fillRect(particle.x + (s.ball.size - size) / 2, particle.y + (s.ball.size - size) / 2, size, size);
-      });
+      // Player hit
+      if (
+        s.ball.x < s.player.x + s.player.w &&
+        s.ball.y + s.ball.size > s.player.y &&
+        s.ball.y < s.player.y + s.player.h
+      ) {
+        s.ball.vx = Math.abs(s.ball.vx);
+        s.score++;
+        setDisplayScore(s.score);
+        beep(audioCtxRef.current, 700);
+      }
 
-      // Draw paddles with neon glow
-      ctx.shadowColor = "#00ffff";
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = "#00ffff";
-      ctx.fillRect(s.player.x, s.player.y, s.player.w, s.player.h);
+      // CPU hit
+      if (
+        s.ball.x + s.ball.size > s.cpu.x &&
+        s.ball.y + s.ball.size > s.cpu.y &&
+        s.ball.y < s.cpu.y + s.cpu.h
+      ) {
+        s.ball.vx = -Math.abs(s.ball.vx);
+        s.score++;
+        setDisplayScore(s.score);
+        beep(audioCtxRef.current, 700);
+      }
 
-      ctx.shadowColor = "#ff00ff";
-      ctx.fillStyle = "#ff00ff";
-      ctx.fillRect(s.cpu.x, s.cpu.y, s.cpu.w, s.cpu.h);
+      // Miss
+      if (s.ball.x < -s.ball.size || s.ball.x > CANVAS_W + s.ball.size) {
+        beep(audioCtxRef.current, 200);
+        s.gameOver = true;
+        if (s.score > s.highScore) {
+          s.highScore = s.score;
+          if (typeof localStorage !== "undefined") localStorage.setItem("pongHighScore", s.highScore);
+        }
+        setIsGameOver(true);
+      }
+    }
 
-      // Draw ball
+    // Draw trail
+    s.trail.forEach((particle, i) => {
+      const alpha = (i / s.trail.length) * 0.6;
+      const size = s.ball.size * (0.4 + (i / s.trail.length) * 0.6);
       ctx.shadowColor = "#ffffff";
-      ctx.shadowBlur = 16;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(s.ball.x, s.ball.y, s.ball.size, s.ball.size);
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.fillRect(particle.x + (s.ball.size - size) / 2, particle.y + (s.ball.size - size) / 2, size, size);
+    });
 
-      ctx.shadowBlur = 0;
+    // Draw paddles with neon glow
+    ctx.shadowColor = "#00ffff";
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = "#00ffff";
+    ctx.fillRect(s.player.x, s.player.y, s.player.w, s.player.h);
 
-      // Center dashed line
-      ctx.setLineDash([8, 8]);
-      ctx.strokeStyle = "rgba(255,255,255,0.15)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(CANVAS_W / 2, 0);
-      ctx.lineTo(CANVAS_W / 2, CANVAS_H);
-      ctx.stroke();
-      ctx.setLineDash([]);
+    ctx.shadowColor = "#ff00ff";
+    ctx.fillStyle = "#ff00ff";
+    ctx.fillRect(s.cpu.x, s.cpu.y, s.cpu.w, s.cpu.h);
 
-      animRef.current = requestAnimationFrame(loop);
-    }
+    // Draw ball
+    ctx.shadowColor = "#ffffff";
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(s.ball.x, s.ball.y, s.ball.size, s.ball.size);
+
+    ctx.shadowBlur = 0;
+
+    // Center dashed line
+    ctx.setLineDash([8, 8]);
+    ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(CANVAS_W / 2, 0);
+    ctx.lineTo(CANVAS_W / 2, CANVAS_H);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
     animRef.current = requestAnimationFrame(loop);
+  }
 
-    return () => {
-      cancelAnimationFrame(animRef.current);
-      canvas.removeEventListener("mousemove", handleMouseMove);
-      canvas.removeEventListener("touchmove", handleTouchMove);
-    };
-  }, []);
+  animRef.current = requestAnimationFrame(loop);
 
-  return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 select-none">
-      {/* Scanline overlay effect via CSS */}
-      <style>{`
-        .scanlines::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: repeating-linear-gradient(
-            0deg,
-            transparent,
-            transparent 2px,
-            rgba(0,0,0,0.08) 2px,
-            rgba(0,0,0,0.08) 4px
-          );
-          pointer-events: none;
-          border-radius: inherit;
-        }
-        .neon-text-cyan {
-          color: #00ffff;
-          text-shadow: 0 0 7px #00ffff, 0 0 20px #00ffff44;
-        }
-        .neon-text-magenta {
-          color: #ff00ff;
-          text-shadow: 0 0 7px #ff00ff, 0 0 20px #ff00ff44;
-        }
-        .neon-text-white {
-          color: #fff;
-          text-shadow: 0 0 7px #ffffff88, 0 0 20px #ffffff44;
-        }
-        .arcade-border {
-          box-shadow:
-            0 0 15px rgba(0,255,255,0.3),
-            0 0 30px rgba(255,0,255,0.15),
-            inset 0 0 15px rgba(0,0,0,0.5);
-        }
-      `}</style>
+  return () => {
+    cancelAnimationFrame(animRef.current);
+    canvas.removeEventListener("mousemove", handleMouseMove);
+    canvas.removeEventListener("touchmove", handleTouchMove);
+  };
+}, []);
 
-      {/* Title */}
-      <h1
-        className="text-4xl md:text-5xl font-bold tracking-widest mb-4"
-        style={{
-          fontFamily: "'Courier New', monospace",
-          color: "#ff00ff",
-          textShadow: "0 0 10px #ff00ff, 0 0 40px #ff00ff66, 0 0 80px #ff00ff33",
-        }}
-      >
-        COURTYARD PONG
-      </h1>
+return (
+  <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 select-none">
+    {/* Scanline overlay effect via CSS */}
+    <style>{`
+      .scanlines::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0,0,0,0.08) 2px,
+          rgba(0,0,0,0.08) 4px
+        );
+        pointer-events: none;
+        border-radius: inherit;
+      }
+      .neon-text-cyan {
+        color: #00ffff;
+        text-shadow: 0 0 7px #00ffff, 0 0 20px #00ffff44;
+      }
+      .neon-text-magenta {
+        color: #ff00ff;
+        text-shadow: 0 0 7px #ff00ff, 0 0 20px #ff00ff44;
+      }
+      .neon-text-white {
+        color: #fff;
+        text-shadow: 0 0 7px #ffffff88, 0 0 20px #ffffff44;
+      }
+      .arcade-border {
+        box-shadow:
+          0 0 15px rgba(0,255,255,0.3),
+          0 0 30px rgba(255,0,255,0.15),
+          inset 0 0 15px rgba(0,0,0,0.5);
+      }
+    `}</style>
 
-      {/* Score bar */}
-      <div className="w-full max-w-[900px] flex justify-between items-center mb-2 px-2">
-        <div className="flex items-center gap-2">
-          <span
-            className="text-xs uppercase tracking-widest neon-text-cyan"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            Hits
-          </span>
-          <span
-            className="text-2xl font-bold neon-text-cyan"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            {displayScore}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className="text-xs uppercase tracking-widest neon-text-magenta"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            Best
-          </span>
-          <span
-            className="text-2xl font-bold neon-text-magenta"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            {displayHigh}
-          </span>
-        </div>
-      </div>
+    {/* Title */}
+    <h1
+      className="text-4xl md:text-5xl font-bold tracking-widest mb-4"
+      style={{
+        fontFamily: "'Courier New', monospace",
+        color: "#ff00ff",
+        textShadow: "0 0 10px #ff00ff, 0 0 40px #ff00ff66, 0 0 80px #ff00ff33",
+      }}
+    >
+      COURTYARD PONG
+    </h1>
 
-      {/* Canvas container */}
-      <div className="relative w-full max-w-[900px] aspect-[2/1] rounded-lg overflow-hidden arcade-border scanlines">
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_W}
-          height={CANVAS_H}
-          className="w-full h-full block cursor-none"
-        />
-
-        {/* Start overlay */}
-        {!started && !isGameOver && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 z-10">
-            <button
-              onClick={startGame}
-              className="px-8 py-4 rounded-lg text-xl font-bold tracking-widest uppercase transition-all duration-200 hover:scale-105 active:scale-95"
-              style={{
-                fontFamily: "'Courier New', monospace",
-                color: "#00ffff",
-                border: "2px solid #00ffff",
-                background: "rgba(0,255,255,0.08)",
-                textShadow: "0 0 10px #00ffff",
-                boxShadow: "0 0 20px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.05)",
-              }}
-            >
-              ▶ Start Game
-            </button>
-            <p
-              className="mt-4 text-sm neon-text-white opacity-60"
-              style={{ fontFamily: "'Courier New', monospace" }}
-            >
-              Move mouse to control paddle
-            </p>
-          </div>
-        )}
-
-        {/* Game Over overlay */}
-        {isGameOver && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 z-10">
-            <h2
-              className="text-4xl md:text-5xl font-bold tracking-widest mb-2"
-              style={{
-                fontFamily: "'Courier New', monospace",
-                color: "#ff0055",
-                textShadow: "0 0 10px #ff0055, 0 0 40px #ff005566",
-              }}
-            >
-              GAME OVER
-            </h2>
-            <p
-              className="text-lg mb-6 neon-text-white"
-              style={{ fontFamily: "'Courier New', monospace" }}
-            >
-              Score: {displayScore}
-              {displayScore >= displayHigh && displayScore > 0 && (
-                <span className="ml-3 neon-text-magenta">★ NEW BEST!</span>
-              )}
-            </p>
-            <button
-              onClick={startGame}
-              className="px-8 py-3 rounded-lg text-lg font-bold tracking-widest uppercase transition-all duration-200 hover:scale-105 active:scale-95"
-              style={{
-                fontFamily: "'Courier New', monospace",
-                color: "#00ffff",
-                border: "2px solid #00ffff",
-                background: "rgba(0,255,255,0.08)",
-                textShadow: "0 0 10px #00ffff",
-                boxShadow: "0 0 20px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.05)",
-              }}
-            >
-              ↻ Play Again
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Footer hints */}
-      <div className="mt-4 flex gap-6">
+    {/* Score bar */}
+    <div className="w-full max-w-[900px] flex justify-between items-center mb-2 px-2">
+      <div className="flex items-center gap-2">
         <span
-          className="text-xs neon-text-cyan opacity-40"
+          className="text-xs uppercase tracking-widest neon-text-cyan"
           style={{ fontFamily: "'Courier New', monospace" }}
         >
-          ◀ YOU
+          Hits
         </span>
         <span
-          className="text-xs neon-text-magenta opacity-40"
+          className="text-2xl font-bold neon-text-cyan"
           style={{ fontFamily: "'Courier New', monospace" }}
         >
-          CPU ▶
+          {displayScore}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span
+          className="text-xs uppercase tracking-widest neon-text-magenta"
+          style={{ fontFamily: "'Courier New', monospace" }}
+        >
+          Best
+        </span>
+        <span
+          className="text-2xl font-bold neon-text-magenta"
+          style={{ fontFamily: "'Courier New', monospace" }}
+        >
+          {displayHigh}
         </span>
       </div>
     </div>
-  );
+
+    {/* Canvas container */}
+    <div className="relative w-full max-w-[900px] aspect-[2/1] rounded-lg overflow-hidden arcade-border scanlines">
+      <canvas
+        ref={canvasRef}
+        width={CANVAS_W}
+        height={CANVAS_H}
+        className="w-full h-full block cursor-none"
+      />
+
+      {/* Start overlay */}
+      {!started && !isGameOver && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 z-10">
+          <button
+            onClick={startGame}
+            className="px-8 py-4 rounded-lg text-xl font-bold tracking-widest uppercase transition-all duration-200 hover:scale-105 active:scale-95"
+            style={{
+              fontFamily: "'Courier New', monospace",
+              color: "#00ffff",
+              border: "2px solid #00ffff",
+              background: "rgba(0,255,255,0.08)",
+              textShadow: "0 0 10px #00ffff",
+              boxShadow: "0 0 20px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.05)",
+            }}
+          >
+            ▶ Start Game
+          </button>
+          <p
+            className="mt-4 text-sm neon-text-white opacity-60"
+            style={{ fontFamily: "'Courier New', monospace" }}
+          >
+            Move mouse to control paddle
+          </p>
+        </div>
+      )}
+
+      {/* Game Over overlay */}
+      {isGameOver && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 z-10">
+          <h2
+            className="text-4xl md:text-5xl font-bold tracking-widest mb-2"
+            style={{
+              fontFamily: "'Courier New', monospace",
+              color: "#ff0055",
+              textShadow: "0 0 10px #ff0055, 0 0 40px #ff005566",
+            }}
+          >
+            GAME OVER
+          </h2>
+          <p
+            className="text-lg mb-6 neon-text-white"
+            style={{ fontFamily: "'Courier New', monospace" }}
+          >
+            Score: {displayScore}
+            {displayScore >= displayHigh && displayScore > 0 && (
+              <span className="ml-3 neon-text-magenta">★ NEW BEST!</span>
+            )}
+          </p>
+          <button
+            onClick={startGame}
+            className="px-8 py-3 rounded-lg text-lg font-bold tracking-widest uppercase transition-all duration-200 hover:scale-105 active:scale-95"
+            style={{
+              fontFamily: "'Courier New', monospace",
+              color: "#00ffff",
+              border: "2px solid #00ffff",
+              background: "rgba(0,255,255,0.08)",
+              textShadow: "0 0 10px #00ffff",
+              boxShadow: "0 0 20px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.05)",
+            }}
+          >
+            ↻ Play Again
+          </button>
+        </div>
+      )}
+    </div>
+
+    {/* Footer hints */}
+    <div className="mt-4 flex gap-6">
+      <span
+        className="text-xs neon-text-cyan opacity-40"
+        style={{ fontFamily: "'Courier New', monospace" }}
+      >
+        ◀ YOU
+      </span>
+      <span
+        className="text-xs neon-text-magenta opacity-40"
+        style={{ fontFamily: "'Courier New', monospace" }}
+      >
+        CPU ▶
+      </span>
+    </div>
+  </div>
+);
 }
-      
+    
