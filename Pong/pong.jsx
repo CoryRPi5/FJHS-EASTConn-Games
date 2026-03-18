@@ -1,8 +1,5 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-  
+  jsx 
+
 import React, { useRef, useEffect, useState, useCallback } from "react";
 
 const CANVAS_W = 900;
@@ -392,6 +389,4 @@ export default function PongGame() {
     </div>
   );
 }
-          
-</body>
-</html>
+       
